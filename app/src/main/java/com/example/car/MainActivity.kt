@@ -1,159 +1,124 @@
+package com.example.car
 
-package com.example.car;
+import android.app.AlertDialog
+import android.app.ProgressDialog
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothSocket
+import android.content.Intent
+import android.os.Bundle
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import java.io.IOException
+import java.util.UUID
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
-import android.content.Intent;
-import android.os.Bundle;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.ListView;
-import android.widget.TextView;
-import android.widget.Toast;
+class MainActivity : AppCompatActivity() {
 
-import androidx.appcompat.app.AppCompatActivity;
+    private lateinit var bon: Button
+    private lateinit var boff: Button
+    private lateinit var bnext: Button
+    private lateinit var bshow: Button
+    private lateinit var tname: TextView
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Set;
+    private var bluetoothAdapter: BluetoothAdapter? = null
+    private var selectedDeviceAddress: String? = null
+    private var bluetoothSocket: BluetoothSocket? = null
 
-public class MainActivity extends AppCompatActivity {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
 
-    public static final int REQUEST_ENABLE_BLUETOOTH = 2;
-    public static final String EXTRA_DEVICE_ADDRESS = "device_address";
-    //These lines declare constants. REQUEST_ENABLE_BLUETOOTH is a request code used when enabling Bluetooth,
-    // and EXTRA_DEVICE_ADDRESS is a key used to pass the device address between activities.
+        bon = findViewById(R.id.on)
+        bshow = findViewById(R.id.show)
+        bnext = findViewById(R.id.next)
+        boff = findViewById(R.id.off)
+        tname = findViewById(R.id.devicename)
 
-    public Button bon, boff, bnext, bshow;
-    public TextView tname;
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
 
-    public BluetoothAdapter bluetoothAdapter;
-    private ArrayAdapter<String> devicesArrayAdapter;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        bon = findViewById(R.id.on);
-        bshow = findViewById(R.id.show);
-        bnext = findViewById(R.id.next);
-        boff = findViewById(R.id.off);
-        //  tname = findViewById(R.id.devicename);
-
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
-            Toast.makeText(this, "Bluetooth is not supported on this device", Toast.LENGTH_LONG).show();
-            finish();
-            return;
+            Toast.makeText(this, "Bluetooth is not supported on this device", Toast.LENGTH_LONG).show()
+            finish()
+            return
         }
 
-        bon.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                enableBluetooth();
-            }
-        });
+        bon.setOnClickListener { enableBluetooth() }
+        bshow.setOnClickListener { showPairedDevices() }
+        bnext.setOnClickListener { connectToSelectedDevice() }
+        boff.setOnClickListener { turnOffBluetooth() }
+    }
 
-        bshow.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showPairedDevices();
-            }
-        });
+    private fun enableBluetooth() {
+        val enableBluetoothIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+        startActivityForResult(enableBluetoothIntent, REQUEST_ENABLE_BLUETOOTH)
+    }
 
-        bnext.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String selectedDeviceAddress = tname.getText().toString().trim();
-                if (!selectedDeviceAddress.isEmpty()) {
-                    connectToDevice(selectedDeviceAddress);
-                } else {
-                    Toast.makeText(MainActivity.this, "No device selected", Toast.LENGTH_SHORT).show();
+    private fun showPairedDevices() {
+        val pairedDevices = bluetoothAdapter?.bondedDevices
+        if (pairedDevices.isNullOrEmpty()) {
+            Toast.makeText(this, "No bonded devices found", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val deviceList = pairedDevices.map { "${it.name} - ${it.address}" }
+        val deviceNamesArray = deviceList.toTypedArray()
+
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Select a device")
+        builder.setItems(deviceNamesArray) { _, which ->
+            val selectedDevice = deviceList[which]
+            selectedDeviceAddress = selectedDevice.split(" - ")[1].trim()
+            tname.text = selectedDevice  // Show selected device on screen
+        }
+        builder.show()
+    }
+
+    private fun connectToSelectedDevice() {
+        if (selectedDeviceAddress == null) {
+            Toast.makeText(this, "No device selected", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val progressDialog = ProgressDialog(this)
+        progressDialog.setMessage("Connecting to device...")
+        progressDialog.setCancelable(false)
+        progressDialog.show()
+
+        Thread {
+            val device = bluetoothAdapter?.getRemoteDevice(selectedDeviceAddress!!)
+            val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB") // Standard UUID for SPP
+
+            try {
+                bluetoothSocket = device?.createRfcommSocketToServiceRecord(uuid)
+                bluetoothSocket?.connect()
+                progressDialog.dismiss()
+
+                // Move to the next activity
+                val intent = Intent(this, Controler::class.java)
+                intent.putExtra(EXTRA_DEVICE_ADDRESS, selectedDeviceAddress)
+                startActivity(intent)
+
+            } catch (e: IOException) {
+                progressDialog.dismiss()
+                runOnUiThread {
+                    Toast.makeText(this, "Failed to connect to device", Toast.LENGTH_SHORT).show()
                 }
+                e.printStackTrace()
             }
-        });
-
-
-        boff.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                turnOffBluetooth();
-            }
-        });
+        }.start()
     }
 
-    public void enableBluetooth() {
-        Intent enableBluetoothIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-        startActivityForResult(enableBluetoothIntent, REQUEST_ENABLE_BLUETOOTH);
-    }
-
-    public void showPairedDevices() {
-        Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
-        if (pairedDevices.isEmpty()) {
-            tname.setText("No bonded devices");
-        } else {
-            ArrayList<String> deviceNames = new ArrayList<>();
-            for (BluetoothDevice device : pairedDevices) {
-                deviceNames.add(device.getName() + " - " + device.getAddress());
-            }
-
-            devicesArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, deviceNames);
-            //  This line creates an ArrayAdapter to adapt the deviceNames ArrayList to a ListView. android.R.layout.simple_list_item_1
-            //  is a predefined layout provided by Android for a simple list item.
-
-            ListView devicesListView = new ListView(this);
-            devicesListView.setAdapter(devicesArrayAdapter);
-
-            devicesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
-
-                    String selectedDevice = (String) adapterView.getItemAtPosition(position);
-                    connectToDevice(selectedDevice);
-                    // Set the selected device name in the TextView
-                    tname.setText(selectedDevice);
-                }
-            });
-
-            setContentView(devicesListView);
-            //Finally, the layout of the activity is set to the ListView, displaying the list of paired devices to the user.
-        }
-    }
-    public BluetoothSocket bluetoothSocket;
-    public void connectToDevice(String selectedDevice) {
-        String[] parts = selectedDevice.split(" - ");
-        String deviceAddress = parts[1].trim(); // Extract the address
-
-        // Get the Bluetooth device object using the address
-        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(deviceAddress);
-
-        try {
-            // Create a Bluetooth socket using the UUID of the device
-            bluetoothSocket = device.createRfcommSocketToServiceRecord(device.getUuids()[0].getUuid());
-            bluetoothSocket.connect(); // Connect to the device
-            moveToNextActivity(deviceAddress);
-        } catch (IOException e) {
-            Toast.makeText(MainActivity.this, "Failed to connect to device", Toast.LENGTH_SHORT).show();
-            e.printStackTrace();
+    private fun turnOffBluetooth() {
+        if (bluetoothAdapter?.isEnabled == true) {
+            bluetoothAdapter?.disable()
+            selectedDeviceAddress = null
+            tname.text = ""
+            Toast.makeText(this, "Bluetooth turned off", Toast.LENGTH_SHORT).show()
         }
     }
 
-    public void moveToNextActivity(String deviceAddress) {
-        Intent intent = new Intent(MainActivity.this, Controler.class);
-        // Pass the device address to the next activity
-        intent.putExtra(EXTRA_DEVICE_ADDRESS, deviceAddress);
-        startActivity(intent);
-    }
-    public void turnOffBluetooth() {
-        if (bluetoothAdapter.isEnabled()) {
-            bluetoothAdapter.disable();
-            tname.setText("");
-            // Clear the device name TextView not required
-            Toast.makeText(this, "Bluetooth turned off", Toast.LENGTH_SHORT).show();
-        }
+    companion object {
+        const val REQUEST_ENABLE_BLUETOOTH = 2
+        const val EXTRA_DEVICE_ADDRESS = "device_address"
     }
 }

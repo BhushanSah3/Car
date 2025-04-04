@@ -1,62 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity"
-    android:background="#B2BEB5"
-    >
+    android:background="@color/light_gray"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/devicename"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select a Device"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:padding="10dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="40dp" />
 
     <Button
         android:id="@+id/on"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_centerVertical="true"
+        android:text="TURN ON"
+        android:textColor="@color/white"
+        android:backgroundTint="@color/teal_700"
+        android:padding="15dp"
         android:layout_marginTop="20dp"
-        android:padding="20dp"
-        android:background=" #008080"
-        android:text="TURN ON" />
+        android:layout_marginHorizontal="16dp"
+        android:elevation="4dp"
+        app:layout_constraintTop_toBottomOf="@id/devicename"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <Button
+        android:id="@+id/show"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="SHOW PAIRED DEVICES"
+        android:textColor="@color/black"
+        android:backgroundTint="@color/white"
+        android:padding="15dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginHorizontal="16dp"
+        android:elevation="4dp"
+        app:layout_constraintTop_toBottomOf="@id/on"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <Button
+        android:id="@+id/off"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="TURN OFF"
+        android:textColor="@color/white"
+        android:backgroundTint="@color/red"
+        android:padding="15dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginHorizontal="16dp"
+        android:elevation="4dp"
+        app:layout_constraintTop_toBottomOf="@id/show"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <Button
         android:id="@+id/next"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginBottom="20dp"
-        android:background=" #FFA500"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:padding="25dp"
-        android:text="NEXT" />
+        android:text="NEXT"
+        android:textSize="18sp"
+        android:textColor="@color/white"
+        android:backgroundTint="@color/orange"
+        android:padding="15dp"
+        android:layout_marginBottom="30dp"
+        android:elevation="6dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
-    <Button
-        android:id="@+id/show"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="20dp"
-        android:layout_centerVertical="true"
-        android:layout_marginTop="20dp"
-        android:background="#F9F6EE"
-        android:layout_toRightOf="@+id/on"
-        android:padding="20dp"
-        android:text="SHOW" />
-
-    <Button
-        android:id="@+id/off"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_centerVertical="true"
-        android:background="#cb4154"
-        android:layout_marginTop="20dp"
-        android:layout_toEndOf="@id/show"
-        android:padding="20dp"
-        android:text="TURN OFF"
-
-        />
-
-
-
-
-</RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

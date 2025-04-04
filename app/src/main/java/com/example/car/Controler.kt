@@ -1,150 +1,142 @@
-package com.example.car;
+package com.example.car
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothSocket
+import android.os.Bundle
+import android.view.MotionEvent
+import android.widget.ImageButton
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import java.io.IOException
+import java.io.OutputStream
+import java.util.UUID
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
-import android.content.pm.PackageManager;
-import android.os.Bundle;
-import android.view.MotionEvent;
-import android.view.View;
-import android.widget.ImageButton;
-import android.widget.Toast;
+class Controler : AppCompatActivity() {
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.UUID;
+    private lateinit var bForward: ImageButton
+    private lateinit var bBack: ImageButton
+    private lateinit var bLeft: ImageButton
+    private lateinit var bRight: ImageButton
 
-public class Controler extends AppCompatActivity {
-    public ImageButton bForward, bBack, bLeft, bRight;
-    private BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-    private BluetoothDevice arduinoDevice;
-    private BluetoothSocket socket;
-    private OutputStream outputStream;
-    private boolean isForwardPressed = false;
-    public boolean isBackPressed = false;
-    public boolean isLeftPressed = false;
-    public boolean isRightPressed = false;
+    private val bluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+    private var arduinoDevice: BluetoothDevice? = null
+    private var socket: BluetoothSocket? = null
+    private var outputStream: OutputStream? = null
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_controler);
+    private var isForwardPressed = false
+    private var isBackPressed = false
+    private var isLeftPressed = false
+    private var isRightPressed = false
 
-        bForward = findViewById(R.id.Forward);
-        bBack = findViewById(R.id.Back);
-        bLeft = findViewById(R.id.Left);
-        bRight = findViewById(R.id.Right);
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_controler)
 
-        connectToArduino();
+        bForward = findViewById(R.id.Forward)
+        bBack = findViewById(R.id.Back)
+        bLeft = findViewById(R.id.Left)
+        bRight = findViewById(R.id.Right)
 
-        bForward.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent event) {
-                if(event.getAction() == MotionEvent.ACTION_DOWN) {
-                    isForwardPressed = true;
-                    sendCommand("F");
-                } else if(event.getAction() == MotionEvent.ACTION_UP) {
-                    isForwardPressed = false;
-                    sendCommand("S");
+        connectToArduino()
+
+        bForward.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    isForwardPressed = true
+                    sendCommand("F")
                 }
-                return true;
+                MotionEvent.ACTION_UP -> {
+                    isForwardPressed = false
+                    sendCommand("S")
+                }
             }
-        });
+            true
+        }
 
-        bBack.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent event) {
-                if(event.getAction() == MotionEvent.ACTION_DOWN) {
-                    isForwardPressed = true;
-                    sendCommand("B");
-                } else if(event.getAction() == MotionEvent.ACTION_UP) {
-                    isForwardPressed = false;
-                    sendCommand("S");
+        bBack.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    isBackPressed = true
+                    sendCommand("B")
                 }
-                return true;
+                MotionEvent.ACTION_UP -> {
+                    isBackPressed = false
+                    sendCommand("S")
+                }
             }
-        });
+            true
+        }
 
-        bRight.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent event) {
-                if(event.getAction() == MotionEvent.ACTION_DOWN) {
-                    isForwardPressed = true;
-                    sendCommand("L");
-                } else if(event.getAction() == MotionEvent.ACTION_UP) {
-                    isForwardPressed = false;
-                    sendCommand("S");
+        bRight.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    isRightPressed = true
+                    sendCommand("R")
                 }
-                return true;
+                MotionEvent.ACTION_UP -> {
+                    isRightPressed = false
+                    sendCommand("S")
+                }
             }
-        });
+            true
+        }
 
-        bLeft.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent event) {
-                if(event.getAction() == MotionEvent.ACTION_DOWN) {
-                    isForwardPressed = true;
-                    sendCommand("R");
-                } else if(event.getAction() == MotionEvent.ACTION_UP) {
-                    isForwardPressed = false;
-                    sendCommand("S");
+        bLeft.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    isLeftPressed = true
+                    sendCommand("L")
                 }
-                return true;
+                MotionEvent.ACTION_UP -> {
+                    isLeftPressed = false
+                    sendCommand("S")
+                }
             }
-        });
-    }
-
-    private void connectToArduino() {
-       // String address = "00:23:02:35:12:09"; // Replace with your Arduino Bluetooth module MAC address
-        String address = "00:23:09:01:61:8A"; // Replace with your Arduino Bluetooth module MAC address
-
-        arduinoDevice = bluetoothAdapter.getRemoteDevice(address);
-        UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); // Standard UUID for SPP (Serial Port Profile)
-
-        try {
-            socket = arduinoDevice.createRfcommSocketToServiceRecord(uuid);
-            socket.connect();
-            outputStream = socket.getOutputStream();
-        } catch (IOException e) {
-            e.printStackTrace();
-            // Display a toast message for the connection error
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(Controler.this, "Failed to connect to Arduino device", Toast.LENGTH_SHORT).show();
-                }
-            });
+            true
         }
     }
 
-    private void sendCommand(String command) {
-        //If the outputStream is not null, this block of code attempts to send the command to the Arduino. It converts the command
-        // string into bytes using command.getBytes() and writes these bytes to the outputStream. If any IOException occurs during
-        // this process, it will be caught, and the stack trace will be printed using e.printStackTrace().
-        if (outputStream != null) {
+    private fun connectToArduino() {
+        val address = "00:23:09:01:61:8A" // Replace with your Arduino Bluetooth module MAC address
+
+        arduinoDevice = bluetoothAdapter.getRemoteDevice(address)
+        val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB") // Standard UUID for SPP
+
+        try {
+            socket = arduinoDevice?.createRfcommSocketToServiceRecord(uuid)
+            socket?.connect()
+            outputStream = socket?.outputStream
+        } catch (e: IOException) {
+            e.printStackTrace()
+            runOnUiThread {
+                Toast.makeText(
+                    this@Controler,
+                    "Failed to connect to Arduino device",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    private fun sendCommand(command: String) {
+        outputStream?.let {
             try {
-                outputStream.write(command.getBytes());
-            } catch (IOException e) {
-                e.printStackTrace();
+                it.write(command.toByteArray())
+            } catch (e: IOException) {
+                e.printStackTrace()
             }
-        } else {
-            Toast.makeText(this, "Output stream is null", Toast.LENGTH_SHORT).show();
+        } ?: run {
+            Toast.makeText(this, "Output stream is null", Toast.LENGTH_SHORT).show()
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
+    override fun onDestroy() {
+        super.onDestroy()
         try {
-            if (socket != null) {
-                socket.close();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+            socket?.close()
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
     }
-
 }
